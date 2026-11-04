@@ -1,0 +1,23 @@
+# .NET build output
+bin/
+obj/
+*.user
+*.suo
+.vs/
+.vscode/
+.idea/
+
+# Test results
+TestResults/
+*.trx
+
+# Generated accessibility reports
+axe-json-reports/
+a11y-results/
+
+# Playwright traces/screenshots
+playwright-traces/
+*.zip
+
+# OS
+.DS_Store
