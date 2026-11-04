@@ -71,6 +71,7 @@ jobs:
       #     echo "Server did not start in time"; cat ../server.log; exit 1
       # -------------------------------------------------------------------------
 
+      # Also generates HTML/CSV reports in a11y-reports/ with `axe reporter`
       - name: Run Playwright axe tests
         run: dotnet test --no-build
 
@@ -81,8 +82,24 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: axe-json-reports
-          path: axe-json-reports/
+          name: a11y-json
+          path: a11y-json/
+          if-no-files-found: ignore
+
+      - name: Upload raw axe-core results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: a11y-axe-core-json
+          path: a11y-axe-core-json/
+          if-no-files-found: ignore
+
+      - name: Upload HTML/CSV reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: a11y-reports
+          path: a11y-reports/
           if-no-files-found: ignore
 
       # --- Local demo site (not used by this project) -------------------------

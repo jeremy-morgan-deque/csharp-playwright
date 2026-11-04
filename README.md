@@ -38,30 +38,53 @@ HEADED=1 dotnet test
 
 ## What the tests do
 
-| Test | Steps | Results file |
+| Test | Steps | Results file name |
 |---|---|---|
-| `test_a11y_workshop_homepage` | Opens the homepage and scans the whole page. | `axe-json-reports/Test-initial_scan.json` |
-| `test_recipe_card_a11y_workshop_homepage` | Opens the homepage, clicks the first recipe card's button and scans only the second recipe card. | `axe-json-reports/Test-modal_scan.json` |
+| `test_a11y_workshop_homepage` | Opens the homepage and scans the whole page. | `Test-initial_scan.json` |
+| `test_recipe_card_a11y_workshop_homepage` | Opens the homepage, clicks the first recipe card's button and scans only the second recipe card. | `Test-modal_scan.json` |
 
-Each file holds the full axe-core results: violations, passes, incomplete and inapplicable rules. The tests don't
-fail when they find violations. To make them fail, add an assertion such as:
+Each scan is saved twice, with the same file name in two folders. Both hold the full results (violations, passes,
+incomplete and inapplicable rules):
+
+| Folder | Format | Use it for |
+|---|---|---|
+| `a11y-json/` | The format the axe DevTools CLI saves: the axe-core results wrapped with a name, id and page info | `axe reporter` and `axe devhub` |
+| `a11y-axe-core-json/` | Plain axe-core results, as `axe.run()` returns them | Other tools that read axe-core results |
+
+Both folders are emptied at the start of each run.
+
+The tests don't fail when they find violations. To make them fail, add an assertion such as:
 
 ```cs
 Assert.That(results1.Violations, Is.Empty);
 ```
 
-## HTML/CSV/XML reports (optional)
+## HTML and CSV reports
 
-When all tests finish, the `[OneTimeTearDown]` step looks for the axe DevTools reporter at
-`src/test/resources/reporter-cli-macos`. If the file is there, it uses the reporter to turn the JSON files into
-HTML, CSV and XML reports in `a11y-results/`. If the file isn't there, the step prints a message and skips.
+When all tests finish, the `[OneTimeTearDown]` step runs
+[`axe reporter`](https://docs.deque.com/devtools-for-web/4/en/cli-reports/#the-axe-reporter-command) to turn the
+JSON files into reports in `a11y-reports/`:
 
-> **Note:** the axe DevTools reporter may expect results in the axe DevTools format. These tests save plain
-> axe-core results, so the reporter may not accept them. This hasn't been tested.
+| File | Contents |
+|---|---|
+| `executive-report.html` | Summary across all scans |
+| `Test-<ui-state>-<id>.html` | One detailed report per scan |
+| `axe-devtools-results.csv` | Every result from every scan, one row per element |
+
+This step needs the axe DevTools CLI on your `PATH` (check with `axe --version`). Without it, the step prints a
+message and skips. `a11y-reports/` is emptied before each run.
+
+To change the formats, edit `ReportFormats` in `ExampleTest.cs`. Add `junit` for an XML report.
+
+You can also generate reports from existing results without running the tests:
+
+```sh
+axe reporter ./a11y-json ./a11y-reports --format=html,csv
+```
 
 ## Uploading results to axe Developer Hub
 
-`devhub.sh` sends the JSON files in `axe-json-reports/` to axe Developer Hub with the axe DevTools CLI
+`devhub.sh` sends the JSON files in `a11y-json/` to axe Developer Hub with the axe DevTools CLI
 (`axe devhub`). You need:
 
 - The axe DevTools CLI installed, so that the `axe` command is on your `PATH`
@@ -89,9 +112,9 @@ If the script isn't executable yet, run `chmod +x devhub.sh` first.
 `.github/workflows/axe-devhub.yml` runs on pushes and pull requests to `main`, and can also be started by hand. It:
 
 1. Builds the tests and installs Playwright's Chromium
-2. Runs `dotnet test`
+2. Runs `dotnet test`, which also generates the HTML and CSV reports
 3. Uploads the results with `devhub.sh`
-4. Saves `axe-json-reports/` as a workflow artifact
+4. Saves `a11y-json/`, `a11y-axe-core-json/` and `a11y-reports/` as workflow artifacts
 5. Runs `dequelabs/axe-devhub-action`, which fails the build if there are violations and comments on pull requests
 
 Add these repository secrets:
@@ -114,7 +137,8 @@ example of scanning an app built from the repo instead of the public site.
 ```
 ExampleTest.cs            # the tests
 AxePlaywrightTests.csproj # project and NuGet package references
-devhub.sh                 # uploads axe-json-reports/ to axe Developer Hub
-axe-json-reports/         # JSON results (generated, git-ignored)
-a11y-results/             # reporter output (generated, git-ignored)
+devhub.sh                 # uploads a11y-json/ to axe Developer Hub
+a11y-json/                # JSON results, axe DevTools format (generated, git-ignored)
+a11y-axe-core-json/       # JSON results, plain axe-core format (generated, git-ignored)
+a11y-reports/             # reporter output (generated, git-ignored)
 ```
