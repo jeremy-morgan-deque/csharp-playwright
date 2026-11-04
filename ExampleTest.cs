@@ -117,6 +117,7 @@ public class ExampleTest : PageTest
         var axeCoreFile = Path.Combine(AxeCoreJsonDir, $"{name}.json");
         File.WriteAllText(axeCoreFile, findings.ToString(Formatting.Indented));
 
+        // Write the axe DevTools CLI-compatible JSON file into a11y-json/
         var devtoolsResult = new JObject
         {
             ["type"] = "axe-devtools-result",
