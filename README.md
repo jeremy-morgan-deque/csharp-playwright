@@ -79,8 +79,20 @@ To change the formats, edit `ReportFormats` in `ExampleTest.cs`. Add `junit` for
 You can also generate reports from existing results without running the tests:
 
 ```sh
+./reports.sh
+```
+
+This runs:
+
+```sh
 axe reporter ./a11y-json ./a11y-reports --format=html,csv
 ```
+
+Unlike the test run, `reports.sh` doesn't empty `a11y-reports/` first. Each HTML file name ends in a new ID, so
+reports from earlier runs stay alongside the new ones. Delete the folder first (`rm -rf a11y-reports`) if you
+only want the latest reports.
+
+`reports.sh` also has a commented-out example that writes a CSV with only violations and items that need review.
 
 ## Uploading results to axe Developer Hub
 
@@ -138,6 +150,7 @@ example of scanning an app built from the repo instead of the public site.
 ExampleTest.cs            # the tests
 AxePlaywrightTests.csproj # project and NuGet package references
 devhub.sh                 # uploads a11y-json/ to axe Developer Hub
+reports.sh                # generates HTML/CSV reports from a11y-json/ by hand
 a11y-json/                # JSON results, axe DevTools format (generated, git-ignored)
 a11y-axe-core-json/       # JSON results, plain axe-core format (generated, git-ignored)
 a11y-reports/             # reporter output (generated, git-ignored)
