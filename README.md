@@ -59,11 +59,37 @@ HTML, CSV and XML reports in `a11y-results/`. If the file isn't there, the step 
 > **Note:** the axe DevTools reporter may expect results in the axe DevTools format. These tests save plain
 > axe-core results, so the reporter may not accept them. This hasn't been tested.
 
+## Uploading results to axe Developer Hub
+
+`devhub.sh` sends the JSON files in `axe-json-reports/` to axe Developer Hub with the axe DevTools CLI
+(`axe devhub`). You need:
+
+- The axe DevTools CLI installed, so that the `axe` command is on your `PATH`
+- Two environment variables:
+
+| Variable | Value |
+|---|---|
+| `AXE_DEVHUB_API_KEY` | Your axe Developer Hub API key |
+| `AXE_DEVHUB_CSHARP_PLAYWRIGHT` | The ID of the axe Developer Hub project to upload to |
+
+Run the tests first, then upload:
+
+```sh
+export AXE_DEVHUB_API_KEY=<your-api-key>
+export AXE_DEVHUB_CSHARP_PLAYWRIGHT=<your-project-id>
+
+dotnet test
+./devhub.sh
+```
+
+If the script isn't executable yet, run `chmod +x devhub.sh` first.
+
 ## Project layout
 
 ```
 ExampleTest.cs            # the tests
 AxePlaywrightTests.csproj # project and NuGet package references
+devhub.sh                 # uploads axe-json-reports/ to axe Developer Hub
 axe-json-reports/         # JSON results (generated, git-ignored)
 a11y-results/             # reporter output (generated, git-ignored)
 ```
