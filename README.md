@@ -84,6 +84,31 @@ dotnet test
 
 If the script isn't executable yet, run `chmod +x devhub.sh` first.
 
+## GitHub Actions
+
+`.github/workflows/axe-devhub.yml` runs on pushes and pull requests to `main`, and can also be started by hand. It:
+
+1. Builds the tests and installs Playwright's Chromium
+2. Runs `dotnet test`
+3. Uploads the results with `devhub.sh`
+4. Saves `axe-json-reports/` as a workflow artifact
+5. Runs `dequelabs/axe-devhub-action`, which fails the build if there are violations and comments on pull requests
+
+Add these repository secrets:
+
+| Secret | Value |
+|---|---|
+| `AXE_DEVHUB_API_KEY` | Your axe Developer Hub API key |
+| `AXE_DEVHUB_CSHARP_PLAYWRIGHT` | The ID of the axe Developer Hub project |
+| `AGORA_AUTH_TOKEN` | Token for Deque's Agora npm registry, used to install `@axe-devtools/cli` |
+| `AGORA_EMAIL` | Email address for the Agora registry |
+
+The CLI install step reads registry settings from an `.npmrc` at the repo root, which must use the two `AGORA_*`
+variables.
+
+The workflow also has commented-out steps that build and serve a local demo site on port 8888. They're there as an
+example of scanning an app built from the repo instead of the public site.
+
 ## Project layout
 
 ```

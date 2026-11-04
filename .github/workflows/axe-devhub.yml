@@ -1,0 +1,101 @@
+name: Accessibility scan (axe DevHub)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  axe-scan:
+    runs-on: ubuntu-latest
+    # The DevHub action comments on PRs when violations are found
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      AXE_DEVHUB_API_KEY: ${{ secrets.AXE_DEVHUB_API_KEY }}
+      AXE_DEVHUB_CSHARP_PLAYWRIGHT: ${{ secrets.AXE_DEVHUB_CSHARP_PLAYWRIGHT }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      # Node is only needed for the axe DevTools CLI (used by devhub.sh)
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Global installs skip the project .npmrc, so point npm at it explicitly
+      - name: Install axe DevTools CLI
+        env:
+          AGORA_AUTH_TOKEN: ${{ secrets.AGORA_AUTH_TOKEN }}
+          AGORA_EMAIL: ${{ secrets.AGORA_EMAIL }}
+        run: |
+          npm install -g @axe-devtools/cli --userconfig "$GITHUB_WORKSPACE/.npmrc"
+          command -v axe
+
+      - name: Build tests
+        run: dotnet build
+
+      # Installs Playwright's Chromium plus the Linux libraries it needs.
+      # Playwright launches Chromium without the sandbox by default, so the
+      # Ubuntu 24.04 user-namespace workaround from the Selenium setup isn't needed.
+      - name: Install Playwright browsers
+        run: pwsh bin/Debug/net9.0/playwright.ps1 install --with-deps chromium
+
+      # --- Local demo site (not used by this project) -------------------------
+      # Kept for demonstration: use these steps to scan an app built from this
+      # repo instead of the public broken-workshop site. Point the tests'
+      # WorkshopUrl at http://localhost:8888/ if you turn them on.
+      #
+      # - name: Install and build demo site
+      #   working-directory: a11y-demo-site
+      #   run: |
+      #     npm ci
+      #     npm run build
+      #
+      # - name: Start server on port 8888
+      #   working-directory: a11y-demo-site
+      #   run: |
+      #     nohup node node_modules/vite/bin/vite.js preview > ../server.log 2>&1 &
+      #     echo "SERVER_PID=$!" >> "$GITHUB_ENV"
+      #     for i in {1..30}; do
+      #       curl -sf http://localhost:8888/ > /dev/null && echo "Server is up" && exit 0
+      #       sleep 1
+      #     done
+      #     echo "Server did not start in time"; cat ../server.log; exit 1
+      # -------------------------------------------------------------------------
+
+      - name: Run Playwright axe tests
+        run: dotnet test --no-build
+
+      - name: Upload results to axe DevHub
+        run: bash devhub.sh
+
+      - name: Upload scan results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: axe-json-reports
+          path: axe-json-reports/
+          if-no-files-found: ignore
+
+      # --- Local demo site (not used by this project) -------------------------
+      # - name: Stop server
+      #   if: always()
+      #   run: |
+      #     [ -n "$SERVER_PID" ] && kill "$SERVER_PID" 2>/dev/null || true
+      #     fuser -k 8888/tcp 2>/dev/null || true
+      # -------------------------------------------------------------------------
+
+      # Checks the uploaded results for this commit and fails if there are violations
+      - name: Check axe DevHub results
+        uses: dequelabs/axe-devhub-action@v1.2.0
+        with:
+          api_key: ${{ secrets.AXE_DEVHUB_API_KEY }}
+          project_id: ${{ secrets.AXE_DEVHUB_CSHARP_PLAYWRIGHT }}
