@@ -12,8 +12,9 @@ TestResults/
 *.trx
 
 # Generated accessibility reports
-axe-json-reports/
-a11y-results/
+a11y-json/
+a11y-axe-core-json/
+a11y-reports/
 
 # Playwright traces/screenshots
 playwright-traces/
